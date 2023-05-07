@@ -12,7 +12,7 @@ from sqlalchemy import create_engine, func
 #################################################
 # Database Setup
 #################################################
-#engine = create_engine("sqlite:///Resources/hawaii.sqlite")
+
 engine = create_engine("sqlite:///Resources/hawaii.sqlite")
 
 # reflect an existing database into a new model
@@ -125,7 +125,7 @@ def start_temp(start_date):
 
     #this uses that variable to create a session query to get the avg, min, max on all dates greater than start date
     #query_date =  datetime.strptime(start_date, '%Y%m%d').strftime('%Y, %m, %d')
-    calc = session.start_date(*sel).\
+    calc = session['start_date'](*sel).\
         filter(Measurement.date >= start_date).group_by(Measurement.date).all()
       
 
