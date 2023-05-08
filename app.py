@@ -45,7 +45,7 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/station<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start_date>"
+        f"/api/v1.0/ - Enter the start date after '/api/v1.0/' in YYYYMMDD format</br>or Enter the start date, then '/' then end date in YYYYMMDD format"
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -112,66 +112,76 @@ def tobs():
 
 @app.route("/api/v1.0/<start_date>")
 def start_temp(start_date):
-    print("Enter the start date after '/api/v1.0/' in YYYYMMDD format")
+    #print("Enter the start date after '/api/v1.0/' in YYYYMMDD format")
 
-    #this creates a variable that tells you to look in the Measurement table at the date, then calculate the avg, man, min 
+    #this creates a variable that tells you to look in the Measurement table then calculate the avg, man, min 
     #of the temperature on that date
-    sel = [Measurement.date, 
-           func.avg(Measurement.tobs), 
+    sel = [func.avg(Measurement.tobs), 
            func.max(Measurement.tobs), 
            func.min(Measurement.tobs)]
     
     session = Session(engine)
 
-    #this uses that variable to create a session query to get the avg, min, max on all dates greater than start date
-    #query_date =  datetime.strptime(start_date, '%Y%m%d').strftime('%Y, %m, %d')
-    calc = session['start_date'](*sel).\
-        filter(Measurement.date >= start_date).group_by(Measurement.date).all()
-      
+    #changes the date format so that calculations can be made
+    query_date =  dt.datetime.strptime(start_date, '%Y%m%d').strftime('%Y-%m-%d')
+   
+   #perform the calculations on the queried dates
+   #this uses that variable to create a session query to get the avg, min, max on all dates greater than start date
+    calc = session.query(*sel).\
+        filter(Measurement.date >= query_date).all()
 
+#close the session
     session.close() 
-    
+
+#create an empty list    
     all_start_dates = []
-    for func.avg, func.max, func.min in calc:
+
+#add the calculations to the empty list    
+    for func_avg, func_max, func_min in calc:
         dates_dict = {}
-        dates_dict["average_temp"] = func.avg
-        dates_dict["max_temp"] = func.max
-        dates_dict["min_temp"] = func.min
+        dates_dict["average_temp"] = func_avg
+        dates_dict["max_temp"] = func_max
+        dates_dict["min_temp"] = func_min
         all_start_dates.append(dates_dict)
         
     return jsonify(all_start_dates)
 
     return jsonify({"error": f"The date {start_date} not found."}), 404
     
-# @app.route("/api/v1.0/<start>/<end>")
-# def start_temp(start, end):
+@app.route("/api/v1.0/<start>/<end>")
+def start_end(start, end):
+#this is the same as the route above except that you are getting two inputs instead of one    
+#this creates a variable that tells you to look in the Measurement table then calculate the avg, man, min 
+#of the temperature on that date
+    sel = [func.avg(Measurement.tobs), 
+           func.max(Measurement.tobs), 
+           func.min(Measurement.tobs)]
     
-#     #this creates a variable that tells you to look in the Measurement table at the date, then calculate the avg, man, min 
-#     #of the temperature on that date
-#     sel = [Measurement.date, 
-#            func.avg(Measurement.tobs), 
-#            func.max(Measurement.tobs), 
-#            func.min(Measurement.tobs)]
+    session = Session(engine)
+
+# this changes the date format so that the calculations can be performed
+    query_start =  dt.datetime.strptime(start, '%Y%m%d').strftime('%Y-%m-%d')
+    query_end = dt.datetime.strptime(end, '%Y%m%d').strftime('%Y-%m-%d')
+
+#this uses that variable to create a session query to get the avg, min, max on all dates greater than start date, less than end
+    calc = session.query(*sel).filter(Measurement.date >= query_start).filter(Measurement.date <= query_end).all()  
     
-#     session = Session(engine)
+    session.close() 
 
-#     #***** adjust below to have the end date in it ********
-#     calc = session.query(*sel).\
-#         filter(Measurement.date >= start).group_by(Measurement.date).all()
-      
-#     #user has a start date. Take that to query the database for all or greater dates
-#     #Maybe I dont't need this or maybe I need to filter and group by date?
-    
-#     #**** adjust this to have end date ******
-#     all_start_end = session.query(Measurement.date, Measurement.tobs).\
-#             filter(Measurement.date >= start).group_by(Measurement.date).all()
+    all_start_end_dates = []
+    #TAKE THE RETURN LIST AND JSONIFY IT
+    for func_avg, func_max, func_min in calc:
+        dates_dict = {}
+        dates_dict["average_temp"] = func_avg
+        dates_dict["max_temp"] = func_max
+        dates_dict["min_temp"] = func_min
+        all_start_end_dates.append(dates_dict)
+        
+    return jsonify(all_start_end_dates)
 
-#     session.close() 
-#     #-----------------------START HERE ----------------------------------
-#     #TAKE THE RETURN LIST AND JSONIFY IT
-   
+    return jsonify({"error": f"The date {start} or {end} date is not found."}), 404
 
-#     return jsonify({"error": f"The date {start} not found."}), 404
+
 
 
 #This must be the last two lines of code
